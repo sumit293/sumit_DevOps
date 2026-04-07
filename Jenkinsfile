@@ -1,36 +1,47 @@
-pipeline {
-    agent any
-    
-    tools {
-        // These names must match what you configured in Global Tool Configuration
-        maven "MAVEN" 
-        jdk "JDK"
-    }
-
-    stages {
-        stage('Initialize') {
-            steps {
-                // On Windows, use 'bat' and Windows environment variable syntax
-                bat "echo Current Path is %PATH%"
-            }
-        }
-        
-        stage('Build') {
-            steps {
-                // We removed the 'dir' block because Jenkins is already 
-                // inside your workspace folder by default.
-                bat 'mvn -B -DskipTests clean package'
-            }
-        }
-    }
-    
-    post {
-        always {
-            // Updated pattern to standard Maven surefire report location
-            junit(
-                allowEmptyResults: true, 
-                testResults: '**/target/surefire-reports/*.xml'
-            )
-        }
-    }
+pipeline { 
+    agent any 
+ 
+    tools { 
+        maven 'Maven'   // Must match Jenkins Global Tool Configuration 
+        jdk 'JDK'       // Configure this as JDK 21 in Jenkins 
+    } 
+ 
+    stages { 
+ 
+        stage('Checkout') { 
+            steps { 
+                checkout scm 
+            } 
+        } 
+ 
+        stage('Build') { 
+            steps { 
+                script { 
+                    if (isUnix()) { 
+                        sh 'mvn clean compile' 
+                    } else { 
+                        bat 'mvn clean compile' 
+                    } 
+                } 
+            } 
+        } 
+ 
+        stage('Test') { 
+            steps { 
+                script { 
+                    if (isUnix()) { 
+                        sh 'mvn test' 
+                    } else { 
+                        bat 'mvn test' 
+                    } 
+                } 
+            } 
+        } 
+    } 
+ 
+    post { 
+        always { 
+            junit '**/target/surefire-reports/*.xml' 
+        } 
+    } 
 }
